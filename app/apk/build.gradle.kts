@@ -14,6 +14,8 @@ kapt {
     mapDiagnosticLocations = true
     javacOptions {
         option("-Xmaxerrs", "1000")
+        option("-Xlint:-processing")
+        option("-Xlint:-deprecation")
     }
 }
 
