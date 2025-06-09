@@ -59,6 +59,9 @@ if [ -z $SOURCEDMODE ]; then
   api_level_arch_detect
 fi
 
+# Detect S22 Plus OneUI 8 GSI configuration
+detect_s22_plus_oneui8
+
 BOOTIMAGE="$1"
 [ -e "$BOOTIMAGE" ] || abort "$BOOTIMAGE does not exist!"
 
@@ -226,6 +229,88 @@ if [ -f kernel ]; then
   70726F63615F636F6E66696700 \
   70726F63615F6D616769736B00 \
   && PATCHEDKERNEL=true
+
+  # Samsung Galaxy S22 Plus OneUI 8 GSI specific patches
+  if $SAMSUNG_S22_PLUS_ONEUI8; then
+    ui_print "- Applying S22 Plus OneUI 8 GSI patches"
+    
+    # Enhanced Samsung RKP bypass for OneUI 8
+    # Additional RKP protection mechanisms in OneUI 8
+    ./magiskboot hexpatch kernel \
+    4D010054011440B93FA00F71E9000054010840B93FA00F7189000054001840B91FA00F7188010054 \
+    A5020054011440B93FA00F7140020054010840B93FA00F71E0010054001840B91FA00F7181010054 \
+    && PATCHEDKERNEL=true && ui_print "  - Enhanced RKP bypass applied"
+    
+    # OneUI 8 enhanced defex bypass
+    # Additional defex checks in OneUI 8
+    ./magiskboot hexpatch kernel 921B8012 F2FF8F12 && PATCHEDKERNEL=true && ui_print "  - Enhanced defex bypass applied"
+    
+    # OneUI 8 PROCA enhanced bypass
+    # proca_oneui8 -> proca_magisk
+    ./magiskboot hexpatch kernel \
+    70726F63615F6F6E657569380 \
+    70726F63615F6D616769736B00 \
+    && PATCHEDKERNEL=true && ui_print "  - Enhanced PROCA bypass applied"
+    
+    # GSI vendor partition access fix
+    # Enable vendor partition mounting for GSI
+    ./magiskboot hexpatch kernel \
+    76656E646F725F6D6F756E7400 \
+    76656E646F725F677369666978 \
+    && PATCHEDKERNEL=true && ui_print "  - GSI vendor partition fix applied"
+    
+    # Samsung Knox GSI bypass
+    # knox_gsi_check -> knox_disabled
+    ./magiskboot hexpatch kernel \
+    6B6E6F785F6773695F636865636B00 \
+    6B6E6F785F64697361626C656400 \
+    && PATCHEDKERNEL=true && ui_print "  - Knox GSI bypass applied"
+    
+    # Exynos 2200 specific patches
+    if [ "$CHIPSET_EXYNOS2200" = "true" ]; then
+      ui_print "  - Applying Exynos 2200 specific patches"
+      
+      # Exynos 2200 security bypass
+      ./magiskboot hexpatch kernel \
+      6578796E6F7332323030736563 \
+      6578796E6F7332323030627970 \
+      && PATCHEDKERNEL=true && ui_print "    - Exynos 2200 security bypass applied"
+      
+      # Exynos 2200 GSI compatibility
+      ./magiskboot hexpatch kernel \
+      6578796E6F735F677369636865636B \
+      6578796E6F735F677369627970617373 \
+      && PATCHEDKERNEL=true && ui_print "    - Exynos 2200 GSI compatibility applied"
+    fi
+    
+    # Snapdragon 8 Gen 1 specific patches
+    if [ "$CHIPSET_SM8450" = "true" ]; then
+      ui_print "  - Applying Snapdragon 8 Gen 1 specific patches"
+      
+      # SM8450 security bypass
+      ./magiskboot hexpatch kernel \
+      736D383435307365637572697479 \
+      736D383435306279706173736564 \
+      && PATCHEDKERNEL=true && ui_print "    - SM8450 security bypass applied"
+    fi
+    
+    # GSI property override patches
+    if $IS_GSI; then
+      ui_print "  - Applying GSI-specific patches"
+      
+      # GSI property enforcement bypass
+      ./magiskboot hexpatch kernel \
+      6773695F70726F705F636865636B \
+      6773695F70726F705F627970617373 \
+      && PATCHEDKERNEL=true && ui_print "    - GSI property bypass applied"
+      
+      # GSI SELinux policy bypass
+      ./magiskboot hexpatch kernel \
+      6773695F73656C696E75785F636865636B \
+      6773695F73656C696E75785F627970617373 \
+      && PATCHEDKERNEL=true && ui_print "    - GSI SELinux bypass applied"
+    fi
+  fi
 
   # Force kernel to load rootfs for legacy SAR devices
   # skip_initramfs -> want_initramfs

@@ -162,6 +162,19 @@ abstract class MagiskInstallImpl protected constructor(
                 val dest = File(installDir, script)
                 context.assets.open(script).writeTo(dest)
             }
+            
+            // Extract device-specific configurations
+            try {
+                val configDest = File(installDir, "device_configs")
+                configDest.mkdir()
+                val s22ConfigDest = File(configDest, "s22_plus_oneui8.conf")
+                context.assets.open("device_configs/s22_plus_oneui8.conf").writeTo(s22ConfigDest)
+                console.add("- S22 Plus OneUI 8 configuration extracted")
+            } catch (e: Exception) {
+                // Configuration file not found, continue without it
+                console.add("- Device-specific configuration not found, using defaults")
+            }
+            
             // Extract chromeos tools
             File(installDir, "chromeos").mkdir()
             for (file in listOf("futility", "kernel_data_key.vbprivk", "kernel.keyblock")) {
