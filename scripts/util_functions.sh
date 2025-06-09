@@ -745,3 +745,70 @@ install_module() {
 
 TMPDIR=/dev/tmp
 MAGISKBIN="/data/adb/magisk"
+
+# Device-specific detection for Samsung Galaxy S22 Plus OneUI 8 GSI
+detect_s22_plus_oneui8() {
+  DEVICE_MODEL=$(grep_get_prop ro.product.model)
+  DEVICE_NAME=$(grep_get_prop ro.product.name)
+  DEVICE_BOARD=$(grep_get_prop ro.product.board)
+  BUILD_VERSION=$(grep_get_prop ro.build.version.release)
+  ONEUI_VERSION=$(grep_get_prop ro.build.version.oneui)
+  
+  # Samsung Galaxy S22 Plus detection
+  IS_S22_PLUS=false
+  IS_ONEUI8=false
+  IS_GSI=false
+  
+  # Check for S22 Plus model variants
+  case "$DEVICE_MODEL" in
+    "SM-S906B"|"SM-S906E"|"SM-S906N"|"SM-S906U"|"SM-S906W")
+      IS_S22_PLUS=true
+      ui_print "- Samsung Galaxy S22 Plus detected: $DEVICE_MODEL"
+      ;;
+  esac
+  
+  # Check for OneUI 8 version
+  if [ -n "$ONEUI_VERSION" ]; then
+    case "$ONEUI_VERSION" in
+      "8."*|"800"*|"80"*)
+        IS_ONEUI8=true
+        ui_print "- OneUI 8 detected: $ONEUI_VERSION"
+        ;;
+    esac
+  fi
+  
+  # Check for GSI installation
+  if grep -q "treble" /proc/cmdline 2>/dev/null || \
+     [ "$(grep_get_prop ro.treble.enabled)" = "true" ] || \
+     [ "$(grep_get_prop ro.vendor.build.fingerprint)" != "$(grep_get_prop ro.build.fingerprint)" ]; then
+    IS_GSI=true
+    ui_print "- GSI (Generic System Image) detected"
+  fi
+  
+  # Set device-specific flags
+  if $IS_S22_PLUS && $IS_ONEUI8; then
+    SAMSUNG_S22_PLUS_ONEUI8=true
+    ui_print "- S22 Plus OneUI 8 configuration enabled"
+    
+    # Set chipset-specific flags
+    case "$DEVICE_BOARD" in
+      *"s5e9925"*|*"exynos2200"*)
+        CHIPSET_EXYNOS2200=true
+        ui_print "- Exynos 2200 chipset detected"
+        ;;
+      *"sm8450"*|*"taro"*)
+        CHIPSET_SM8450=true
+        ui_print "- Snapdragon 8 Gen 1 chipset detected"
+        ;;
+    esac
+  else
+    SAMSUNG_S22_PLUS_ONEUI8=false
+  fi
+  
+  export IS_S22_PLUS
+  export IS_ONEUI8
+  export IS_GSI
+  export SAMSUNG_S22_PLUS_ONEUI8
+  export CHIPSET_EXYNOS2200
+  export CHIPSET_SM8450
+}
